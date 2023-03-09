@@ -286,6 +286,480 @@ relative 是没有脱离标准流的，只是激活了 left、right等属性，�
 
 > 所以子绝父相就是这么来的，子元素用绝对定位，那么父元素要相对定位。其实对于子元素而言，父元素啥定位都无所谓（除了 static），但是不能影响父元素原本的逻辑。因为父元素原本就是按照标准文档流布局的，所以为了子元素，父元素可以设置 position，但是依然要满足文档流布局。所以这个时候要设置为 relative，此时会激活 left 等属性，但我们不用，那么对父元素就无影响。
 
+![](pic/11.png)
+
+这里补充一个知识点，就是绝对定位元素的特点，首先 absolute 虽然叫绝对定位，fixed 叫固定定位，但这两者都算绝对定位元素。如果设置了 position 为 absolute 或 fixed，那么具有如下特点。
+
++ 可以任意设置宽高，不关你事行内还是非行内，不管是 span 还是 div，都可以随意设置。不设置的话，宽高则由内容决定。比如 div 里面嵌套 span，div 的高度会由 span 撑起来，但是宽度占据一行，而如果 div 设置了绝对定位，那么宽度也由 span 决定。所以这类似 inline-block，不过它只是符合 inline-block 的特性，但并不是真的设置成了 inline-block。
++ 不再受标准流的约束，不再严格按照从上到下，从左到右的顺序排布；
++ 不再严格区分块级、行内级，块级和行内级的很多特性都会消失；
++ 不再给父元素汇报宽高数据，比如 div 嵌套 span，如果 span 设置了绝对定位，那么不会像父元素汇报宽高，于是外层的 div 会消失，因为没有高度；
++ 脱离标准流的内部的数据还是按照标准量来布局的；
+
+对于绝对定位元素来说：
+
++ 相对定位的父元素的宽度 = 绝对定位的子元素的宽度 + left + right + margin-left + margin-right；
++ 相对定位的父元素的高度 = 绝对定位的子元素的高度 + top + bottom + margin-top + margin-bottom；
+
+![](pic/12.png)
+
+auto 就是交给浏览器来决定，宽度如果为 auto。
+
++ 行内元素：由包裹内容决定；
++ inline-block 元素：由包裹内容决定，但可以设置宽高；
++ 块级元素：由父元素宽度决定，独占父元素的一行；
+
+<font color="green">**sticky**</font>
+
++ 这是一个期待已久的属性，比其它定位方式要新一些；
++ 它可以看成是相对定位和绝对（固定）定位的结合体；
++ 它允许被定位的元素表现得像相对定位一样，直到它滚动到某个阈值点；
++ 当达到这个阈值点时，就会变成固定定位；
+
+举个例子，导航栏，一开始在上方，当滑动一段时间后就固定了。
+
+~~~html
+    <style>
+        div {
+            position: sticky;
+            top: 0;
+        }
+    </style>
+~~~
+
+滑动滑动，距离顶部为 0 时，保持固定。
+
+> sticky 相对的也不是视窗，而是最近的一个可以滚动的视口。
+
+#### z-index
+
+z-index 属性用来定位元素的层叠顺序（仅对定位元素有效），我们说浏览器以左上角为原点，水平向右是 x 轴，水平向下时 y 轴。但还有一个 z 轴， 从屏幕向外。
+
++ 取值可以是正整数、负整数、0
+
+如果是兄弟关系
+
++ 值越大，层叠在越上面，因为越向外，越靠近人眼；
++ 值相等，写在后面的元素层叠在上面；
+
+如果不是兄弟关系
+
++ 各自从元素自己以及祖先元素中，找出最临近的两个元素进行比较；
++ 而且这两个元素必须有设置 z-index 的具体数值；
+
+### CSS 布局之元素浮动
+
+多个 div 默认是垂直显示的，如果想水平显示的话，那么必须设置 inline-block，但问题是这样会对不齐，很丑。但学完了浮动之后，就好办了。
+
+#### 认识浮动
+
+float 属性可以指定一个元素沿着所在容器的左侧或右侧放置，允许文本和内联元素环绕它。
+
++ float 属性最初只用于在一段文本内浮动图像，实现文字环绕的效果；
++ 但是早期的 CSS 标准中并没有提供好的左右布局方案，因此在一段时间里面它成为网页多列布局的最常用工具；
++ 绝对定位和浮动都会让元素脱离标准文档流，以达到灵活布局的效果；
+
+float 可以让元素产生浮动效果，常用取值如下：
+
++ none：不浮动，默认值；
++ left：向左浮动；
++ right：向右浮动；
+
+元素一旦浮动，脱离标准流：
+
++ 朝着向左或向右的方向移动，直到自己的边界紧贴着包含块（一般是父元素）或者其它浮动元素的边界为止；
++ 定位元素会层叠在浮动元素上面，浮动元素会在非定位元素上面；
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #box1 {
+            width: 600px;
+            height: 600px;
+            background-color: aliceblue;
+            margin: 0 auto;
+        }
+        .item1 {
+            background-color: orange;
+            float: left;
+        }
+
+        .item2 {
+            background-color: forestgreen;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div id="box1">
+        <div class="item1">1</div>
+        <div class="item2">2</div>
+    </div>
+</body>
+</html>
+~~~
+
+![](pic/13.png)
+
+浮动元素不会超过父元素内容的边界，并且浮动元素之间是不能层叠的。
+
+看一下京东的页面：
+
+![](pic/14.png)
+
+默认情况下 div 是独占一行的，应该向下排列，但这里水平排列了，说明设置了浮动。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #box1 {
+            width: 100px;
+            height: 100px;
+            background-color: aliceblue;
+            float: left;
+        }
+
+        #box2 {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+            float: left;
+        }
+
+        #box3 {
+            width: 100px;
+            height: 100px;
+            background-color: seagreen;
+            float: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="box1">1</div>
+    <div id="box2">2</div>
+    <div id="box3">3</div>
+</body>
+</html>
+~~~
+
+![](pic/15.png)
+
+三个 div 是并排显示的，这里可能有人会有一个误区，这三个元素都设置了浮动，都脱离标准文档流。那么根据之间的结论，都相对于左上角为 0，那么应该重叠才对啊。其实这是 CSS 浮动的规则，浮动元素是不会重叠的。但如果 box1 是浮动，box2 没有浮动，那么两者是会重叠的。
+
+所以浮动规则如下：
+
++ 如果一个元素浮动，发现另一个元素已经在那个位置了，后浮动的元素紧贴着前一个浮动的元素。左浮找左浮，右浮找右浮。
++ 如果水平方向上的剩余空间不够显示浮动元素，浮动元素将向下移动，直到有充足空间为止（相当于找了新的一行）。
+
+浮动元素虽然脱离标准文档流了，但是后面的浮动元素不会和它重叠，这是 CSS 的规定。如果后面的是普通元素，那么重叠，因为脱标之后，后面的元素是不会考虑的。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #box1 {
+            width: 100px;
+            height: 100px;
+            background-color: aliceblue;
+            float: left;
+        }
+
+        #box2 {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+        }
+
+        #box3 {
+            width: 100px;
+            height: 100px;
+            background-color: seagreen;
+        }
+    </style>
+</head>
+<body>
+    <div id="box1">1</div>
+    <div id="box2">2</div>
+    <div id="box3">3</div>
+</body>
+</html>
+~~~
+
+box2 和 box3 不浮动，那么忽略 box1，box2 会和 box1 的位置相同，box3 在 box2 下面。而浮动元素的优先级大于非定位元素，所以页面如下：
+
+![](pic/16.png)
+
+注意：如果是行内元素，那么浮动元素是不会覆盖的。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #box1 {
+            width: 100px;
+            height: 100px;
+            background-color: aliceblue;
+            display: inline-block;
+        }
+
+        #box2 {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+            float: left;
+        }
+
+        #box3 {
+            width: 100px;
+            height: 100px;
+            background-color: seagreen;
+        }
+    </style>
+</head>
+<body>
+    <div id="box1">1</div>
+    <div id="box2">2</div>
+    <div id="box3">3</div>
+</body>
+</html>
+~~~
+
+![](pic/17.png)
+
+按理说途中应该只显示两个块，box2 是浮动元素，它会把 box1 给盖住。但 box1 变成了 inline-block，是按照行内显示的，所以被挤出来了。
+
+![](pic/18.png)
+
+一开始 float 出来就是干这件事的，为了实现文字环绕。
+
+#### 行内元素的间隙处理
+
+标签之前由于有换行，所以会被当成一个空格处理。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        span {
+            background-color: seagreen;
+        }
+    </style>
+</head>
+<body>
+    <span>aaa</span>
+    <span>bbb</span>
+    <span>ccc</span>
+</body>
+</html>
+~~~
+
+![](pic/19.png)
+
+这个时候就可以使用 float: left，但仅仅贴在一起又会很丑，于是可以设置一个 margin-right。
+
+~~~html
+    <style>
+        span {
+            background-color: seagreen;
+            float: left;
+            margin-right: 5px;
+        }
+    </style>
+~~~
+
+虽然效果类似，但之间的间隙是精准的。
+
+#### 实现一个百度页面
+
+我们实现一个百度页面。
+
+~~~html
+<body>
+    <ul>
+        <li class="item"><a href="#">1</a></li>
+        <li class="item"><a href="#">2</a></li>
+        <li class="item"><a href="#">3</a></li>
+        <li class="item"><a href="#">4</a></li>
+        <li class="item"><a href="#">5</a></li>
+        <li class="item"><a href="#">6</a></li>
+        <li class="item"><a href="#">7</a></li>
+        <li class="item"><a href="#">8</a></li>
+        <li class="item"><a href="#">9</a></li>
+        <li class="item"><a href="#">10</a></li>
+        <li class="item"><a href="#">下一页</a></li>
+    </ul>
+</body>
+~~~
+
+![](pic/20.png)
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        /* ul 的默认样式是每个 li 右移一段距离 */
+        /* li 的默认样式是每个 li 都有一个点 */
+        /* 这里将它们全部去掉 */
+        ul, li {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        /* 将 a 的装饰线全部去掉 */
+        a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        /* li 的内容样式 */
+        ul > li {
+            float: left;  /* 左浮动 */
+            margin-left: 10px; /* 左边距 10px */
+        }
+
+        ul > li > a {
+            /* 宽高，可以给 li 设置，也可以给 a 设置 */
+            width: 60px;
+            height: 60px;
+            /* 但 a 标签是行内元素，没有宽高的概念，所以要设置 display */
+            display: inline-block;
+            text-align: center;  /* 文字水平居中 */
+            line-height: 60px;   /* 文字垂直居中 */
+            border-radius: 10px;
+            background-color: wheat;
+        }
+
+        /* 鼠标放上去变颜色 */
+        ul > li > a:hover {
+            background-color: aqua;
+        }
+
+        /* li 被选中时换颜色 */
+        ul > li:active > a {
+            background-color: aqua;
+        }
+    </style>
+</head>
+<body>
+    <ul>
+        <li class="item"><a href="#">1</a></li>
+        <li class="item"><a href="#">2</a></li>
+        <li class="item"><a href="#">3</a></li>
+        <li class="item"><a href="#">4</a></li>
+        <li class="item active"><a href="#">5</a></li>
+        <li class="item"><a href="#">6</a></li>
+        <li class="item"><a href="#">7</a></li>
+        <li class="item"><a href="#">8</a></li>
+        <li class="item"><a href="#">9</a></li>
+        <li class="item"><a href="#">10</a></li>
+        <li class="item"><a href="#">下一页</a></li>
+    </ul>
+</body>
+</html>
+~~~
+
+![](pic/21.png)
+
+还是比较简单的，所以有的人不喜欢 ul 和 li，就是因为重置默认属性比较麻烦，还不如用 div 实现。
+
+#### 实现一个京东页面
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
