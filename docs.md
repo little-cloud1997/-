@@ -51,14 +51,14 @@ JavaScript 和 Python 一样，都是一门普通的解释型语言。我们首�
 
 以上我们就简单介绍了一下 JavaScript，下面来开始学习相关语法。
 
-## JavaScript 的变量与数据类型
+## JavaScript 的变量声明
 
-在 JavaScript 中可以使用 var 关键字定义一个变量，从 ECMAScript 6 开始还支持使用 let、const 关键字，我们后续再说。
+在 JavaScript 中可以使用 var 关键字声明一个变量，从 ECMAScript 6（简称 ES6）开始还支持使用 let、const 关键字，我们后续再说，目前先来学习 ES5。
 
 ~~~html
 <body>
 <script>
-    // 定义一个 name 变量并赋值
+    // 声明一个 name 变量并赋值
     var name = "古明地觉"
     // 也可以先声明，再赋值
     var age
@@ -161,11 +161,317 @@ JavaScript 和 Python 一样，都是一门普通的解释型语言。我们首�
 
 用户输入内容，然后点击确定，那么输入的内容就会被变量 words 保存起来。注意：在用户点击确定之前，prompt 函数会处于阻塞状态。
 
+<font color="green">**然后是使用变量时的一些注意事项：**</font>
 
+1）如果一个变量没有声明就直接使用，那么会报错；
 
+~~~html
+<body>
+<script>
+    console.log(age)
+</script>
+</body>
+~~~
 
+浏览器在执行这段代码时会报错：Uncaught ReferenceError: age is not defined。再比如执行 var newAge = age，在没有声明 age 的情况下同样会报错，总之不可以使用一个没有声明的变量。
 
+但如果你打印的是 name，不是 age，那么会发现正常执行。
 
+~~~html
+<body>
+<script>
+    console.log(name)
+</script>
+</body>
+~~~
+
+这并不是我们的结论出错了，而是因为默认有一个全局的 name，它位于 window 里面，我们打印一下 window。
+
+![](pic/4.png)
+
+这个 window 是浏览器提供给我们的，当变量不存在时，会从 window 里面查找。关于 window 我们后续会详细说，总之变量必须在声明之后才可以使用。
+
+2）如果一个变量声明了，但是没有赋值，那么会有一个默认值 undefined；
+
+~~~html
+<body>
+<script>
+    var xxx
+    console.log(xxx)  // undefined
+    console.log(xxx === undefined)  // true
+</script>
+</body>
+~~~
+
+3）变量不声明直接赋值也是可以的，但不推荐，如果不声明直接赋值，那么表示创建一个全局变量（会被添加到 window 对象上）；
+
+~~~html
+<body>
+<script>
+    // 定义一个函数，关于函数后面说
+    function func() {
+        // 这里没有使用 var 关键字，表示在不声明的情况下直接赋值
+        // 此时相当于创建了一个全局变量
+        name = "古明地觉"
+    }
+    func()
+    // 函数执行完之后，全局变量就创建好了
+    console.log(name)  // 古明地觉
+</script>
+</body>
+~~~
+
+如果在函数里面的 name 前面加上了 var 关键字，那么创建的就是局部变量，只能在函数里面生效。
+
+所以这就是 JavaScript 的变量声明，在声明的时候如果使用了 var 关键字，那么创建的变量只能在当前作用域内使用；如果不使用 var 关键字，那么创建的就是全局变量，在任何地方都可以用。除非你明确自己就是要创建一个全局变量，否则不要省略 var 关键字。
+
+## JavaScript 的数据类型
+
+在 JavaScript 中，每一个值都拥有特定的类型，那么总共都有哪些类型呢？
+
++ number
++ string
++ boolean
++ undefined
++ null
++ object
++ bigint（ES 6 新增）
++ symbol（ES 6 新增）
+
+可以看到总共八种类型，7 种原始类型，一种复杂类型。
+
+提到数据类型，这里必须要提一个操作符 typeof，它用于检测变量值的类型。因为 JavaScript 是动态语言，我们给一个变量赋值为一个字符串，然后再给它赋值为一个整数，这是允许的。
+
+~~~html
+<body>
+<script>
+    var words = "你好"
+    console.log(typeof words)  // string
+    words = 123
+    console.log(typeof words)  // number
+</script>
+</body>
+~~~
+
+对于动态语言来说，在声明变量的时候无法显式地指定类型，只能根据赋的值去推断。当赋值为 "你好" 时，那么 words 就是 string 类型；后续给 words 重新赋值，不要求类型一定为 string，也可以赋值为别的类型，比如 number。
+
+~~~html
+<body>
+<script>
+    var words
+    // 只声明不赋值，值为 undefined，类型也为 undefined
+    console.log(typeof words)  // undefined
+    // 重新赋值为字符串
+    words = "哈哈"
+    console.log(typeof words)  // string
+    // 重新赋值为整数
+    words = 123
+    console.log(typeof words)  // number
+</script>
+</body>
+~~~
+
+所以对一个变量或值使用 typeof 时，会返回一个字符串，总共如下几种：
+
++ "undefined"：表示变量或值未定义；
++ "boolean"：表示变量或值为布尔类型；
++ "string"：表示变量或值为字符串；
++ "number"：表示变量或值为整数或浮点数；
++ "object"：表示变量或值为对象（不是函数）或 null；
++ "function"：表示变量或值为函数；
++ "symbol"：表示变量或值为符号；
+
+下面来分别介绍这些类型。
+
+### number 类型 
+
+number 类型代表整数或浮点数。
+
+~~~html
+<body>
+<script>
+    var age = 17
+    var height = 155.5
+    console.log(typeof age)  // number
+    console.log(typeof height)  // number
+</script>
+</body>
+~~~
+
+number 类型的值可以进行加减乘除、取余等数学运算，还可以进行左移、右移、按位与等位运算。这些运算符和其它语言都是类似的，因此就不赘述了。
+
+除了常规数值，还有一些特殊数值也属于 number 类型。
+
+~~~html
+<body>
+<script>
+    // 代表正无穷
+    var a = Infinity
+    // 代表负无穷
+    var b = -Infinity
+    // 代表一个错误，NaN 的意思是 not a number
+    var c = NaN
+</script>
+</body>
+~~~
+
+然后是进制，不同进制的整数要怎么表示呢？
+
+~~~html
+<body>
+<script>
+    // 二进制
+    var bin = 0b101101
+    // 八进制
+    var oct = 0o173
+    // 十六进制
+    var hex = 0xFF
+</script>
+</body>
+~~~
+
+我们也可以获取 JavaScript 所能表示的最大整数和最小整数。
+
+~~~html
+<body>
+<script>
+    var max = Number.MAX_VALUE
+    var min = Number.MIN_VALUE
+</script>
+</body>
+~~~
+
+然后 Number 还提供了很多的 API，用来操作一个数值，这些等到后面单独说。
+
+### string 类型
+
+在开发中，我们经常会有一些文本需要表示，这时候我们会使用字符串来保存。
+
+~~~html
+<body>
+<script>
+    // 可以使用双引号，也可以使用单引号
+    var name = "古明地觉"
+    var where = '地灵殿'
+    // 在 ES6 里面还新增了反引号，它实现了 Python 的 f-string 功能
+    var info = `name: ${name}，where: ${where}`
+</script>
+</body>
+~~~
+
+字符串很简单，然后是字符串的一些方法和属性，比如字符串的替换、查找等等，这些也留到后面单独说。
+
+### boolean 类型和 undefined 类型
+
+用于表示真假，有两个值：true 和 false。
+
+~~~html
+<body>
+<script>
+    var flag = false
+    var flag2 = 2 > 1
+    var flag3 = (typeof true) === "boolean"
+    console.log(flag)  // false
+    console.log(flag2) // true
+    console.log(flag3) // true
+</script>
+</body>
+~~~
+
+然后是 undefined 类型，比较简单，就和布尔类型放在一起说了。当一个变量只声明没有赋值的时候，类型和值都为 undefined。
+
+~~~html
+<body>
+<script>
+    var x
+    console.log(x)  // undefined
+    console.log(typeof x)  // undefined
+    // 或者手动赋值给 undefined
+    var y = undefined
+    // 但判断类型的时候，要写成 "undefined"，不要写成了 undefined
+    console.log((typeof y) == "undefined")  // true
+</script>
+</body>
+~~~
+
+注意：在声明变量的时候最好赋一个初始值，并且不要显式地声明为 undefined。
+
+### object 类型和 null 类型
+
+object 类型是一个特殊的类型，我们通常把它们称之为引用类型或复杂类型。
+
++ 其它的数据类型通常称之为原始类型，因为只能保存单个具体的值；
++ 而 object 类型可以保存非常多的值；
+
+~~~html
+<body>
+<script>
+    // 类似 Python 的字典，但在 JavaScript 里面叫做对象
+    // key 可以加引号、也可以不加，如果 key 不符合变量的命名规则，那么必须加引号
+    var girl = {
+        name: "古明地觉",
+        age: 17,
+        "public address": "地灵殿"
+    }
+    // 可以通过 . 的方式来获取，也可以通过 [] 来获取
+    console.log(girl.name)
+    console.log(girl["age"])
+    console.log(girl["public address"])
+</script>
+</body>
+~~~
+
+然后每个类型都有对应的零值，比如 number 类型的零值为 0 或 0.0，string 类型的零值为 ""，那么 object 类型的零值是什么呢？答案是 null。
+
+~~~js
+console.log(typeof null)  // object
+~~~
+
+所以 null 通常用来表示一个对象为空，在给一个对象初始化时，会赋值为 null。
+
+这里有人分不清 undefined 和 null 的关系，我们总结一下：
+
++ undefined 通常只有在一个变量已声明、但未初始化的时候才会用到，它的值默认为 undefined；
++ 并且我们不推荐直接给变量赋值给 undefined，所以很少主动来用；
++ null 值非常常用，当变量准备保存一个对象时，但对象不确定，这时候可以先赋值为 null，它就是为 object 类型准备的；
+
+关于类型先说到这里，symbol 和 bigint 后续再聊。
+
+### 数据类型的转换
+
+在开发中，我们会经常对数据进行类型转换。
+
++ 大多数情况下，运算符和函数会自动将赋予它们的值转成正确的类型，这是隐式转换；
++ 我们也可以通过显式的方式，来对数据进行转换；
+
+下面来看一下数据类型之间的转换，转换主要发生 number、string、boolean 之间。
+
+#### 字符串 string 的转换
+
+其它类型需要经常转成 string 类型，比如和字符串拼接在一起，或者使用字符串中的方法。
+
+转换方式一：隐式转换。
+
++ 执行 + 操作，如果 + 运算符两边有一个是字符串，那么另一个也会自动转成字符串进行拼接；
++ 某些函数执行时，也会自动将参数转成字符串类型，比如 console.log；
+
+~~~html
+<body>
+<script>
+    // 会以字符串的形式相加
+    console.log(123 + "456")  // 123456
+    // 如果和空字符串相加，那么等价于将类型转成字符串
+    var num = 123
+    var numStr = num + ""
+    console.log(numStr === "123")  // true
+    var flag = true
+    var flagStr = flag + ""
+    console.log(flagStr === "true")  // true
+</script>
+</body>
+~~~
+
+转换方式二：显式转换。
 
 
 
