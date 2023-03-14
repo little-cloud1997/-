@@ -473,31 +473,271 @@ console.log(typeof null)  // object
 
 转换方式二：显式转换。
 
+~~~html
+<body>
+<script>
+    var num = 123
+    // 通过 String 函数，将整数转成字符串
+    var numStr = String(num)
+</script>
+</body>
+~~~
 
+#### 数值 number 的转换
 
+其它类型也可以转成 number 类型，并且转换方式同样有两种。
 
+方式一：隐式转换。
 
++ 在非加法算数运算中，会将符号两边的值转成 number 类型进行运算；
++ 但如果是加法，除非 + 号两边都是数值，只有一个是字符串，那么两边都会转成字符串运算；
 
+~~~html
+<body>
+<script>
+    console.log("6" / "2")  // 3
+</script>
+</body>
+~~~
 
+方式二：显式转换
 
+~~~html
+<body>
+<script>
+    // 这里的 62 是字符串
+    console.log("6" + "2")  // 62
+    // 调用 Number 函数显示转换
+    // 这里的 8 是整数
+    console.log(Number("6") + Number("2"))  // 8
+</script>
+</body>
+~~~
 
+这里是字符串转整数，如果是其它类型的值：
 
++ Number(undefined) 返回 NaN
++ Number(null) 返回 0
++ Number(true) 返回 1、Number(false) 返回 0
++ Number(字符串)，当字符串去掉首尾空格后，如果是空字符串，那么返回 0。否则字符必须全部是数字，否则返回 NaN
 
+#### 布尔类型的转换
 
+这个是最简单的，它发生在逻辑运算中，但也可以通过 Boolean 显式地进行转换。
 
++ 0、空字符串、null、undefined、NaN 都为 false；
++ 其它值为 true
 
+不管显式还是隐式，都符合这个规则。
 
+## JavaScript 的运算符
 
+任何语言都有各种各样的运算符，比如：
 
++ 算数运算符
++ 赋值运算符
++ 自增和自减
++ 比较运算符
++ 逻辑运算符
 
+像我们生活中使用的 + - * / 便属于运算符，而运算符应用的对象叫做运算元。比如 5 + 2，加号应用在两个对象上，那么它就有两个运算元，因为属于二元运算符。再比如取反操作 ~，它显然就是一元运算符。
 
+### 算数运算符
 
+算数运算符用在数学表达式中，它的使用方式和数学中是一样的。
 
+![](pic/5.png)
 
+比较简单，这里需要说一下幂运算，在 ES7 之前需要通过 Math.pow 计算，但从 ES7 开始变成了一个操作符。当然 Math 里面还有很多其它的函数，比如正余弦，对数等等。
 
+### 赋值运算符
 
+前面使用的 = 也是一个运算符，被称为赋值运算符。
 
+比如 var x = 123，var name = "古明地觉"。
 
+另外 JavaScript 还支持链式赋值，举个例子：
+
+~~~html
+<body>
+<script>
+    var x = 1
+    var y = 1
+    var z = 1
+    
+    var x1 = 1, y1 = 1, z1 = 1
+    // 当赋的值都相同时，可以采用链式赋值
+    var x2 = y2 = z2 = 1
+</script>
+</body>
+~~~
+
+比较简单，没什么好说的。但从代码可读性的角度，不推荐链式赋值。
+
+然后赋值还有一种简写。
+
++ num = num + 10 等价于 num += 10
+
+所有算数运算符和位运算符都支持这种形式。
+
+说到赋值，自增和自减就一起说了，如果某个变量要增加 1，那么可以写成 num++，减少 1，可以写成 num--。
+
++ num++ 等价于 num += 1
++ num-- 等价于 num -= 1
+
+### 比较运算符
+
+在数学中，有很多用于大小比较的运算符，这些在 JavaScript 里面也是支持的。
+
++ a > b, a < b
++ a >= b, a <= b
++ a == b, a != b
+
+比较运算符的结果都是布尔类型。
+
+![](pic/6.png)
+
+这些都是其它语言中出现的，就不详细说说明了。但在 JS 中除了 == 之外，还有 ===。
+
++ ==，如果两边值的类型不同，那么会统一转成 number 类型的值进行比较；
++ ===，如果两边值的类型不同，那么直接返回 false；
+
+~~~html
+<body>
+<script>
+    var x = ""
+    var y = 0
+    // x 和 y 转成布尔值之后都是 0
+    console.log(x == y)  // true
+    console.log(x === y)  // fale
+</script>
+</body>
+~~~
+
+同样的还有 != 和 !==，建议在工作中一律使用 === 和 !==。
+
+## JavaScript 的控制流
+
+任何语言都包含控制流，比如分支、循环，JavaScript 也是如此。
+
+在程序开发中，程序有三种不同的执行方式：
+
++ 顺序：从上到下，顺序执行代码，这也是 JavaScript 代码的默认执行流程；
++ 分支：根据条件判断，决定执行代码的分支；
++ 循环：让特定代码重复执行
+
+### 分支
+
+说一下 JavaScript 里面的分支，首先是 if 语句。
+
+~~~html
+<body>
+<script>
+    var age = 18
+    if (age > 60) {
+        console.log("old")
+    } else if (age > 18) {
+        console.log("adult")
+    } else {
+        console.log("young")
+    }
+</script>
+</body>
+~~~
+
+JavaScript 分支条件必须使用括号包起来，然后具体代码写在大括号里面。注意：JavaScript 的大括号只是为了将代码组合在一起，它并没有定义一个独立的作用域，换句话说里面的声明的变量在外部也是可以生效的。
+
+~~~html
+<body>
+<script>
+    var age = 18
+    if (age > 60) {
+        console.log("old")
+    } else if (age > 18) {
+        console.log("adult")
+    } else {
+        var xx = "aaaa"
+        console.log("young")
+    }
+    console.log(xx)
+</script>
+</body>
+~~~
+
+当 age 小于 18 时，会执行 else 分支，会定义变量 xx，因此可以打印。虽然 xx 是在大括号里面定义的，不过不要紧，它没有单独定义作用域。另外如果某个分支的代码只有一行，那么可以省略大括号。
+
+> 分支的条件也可以跟一个普通的值，会自动调用 Boolean，判断是否为假，这一点和 Python 一样。
+
+来看一下三元运算符，有时我们会根据一个条件去赋值一个变量，比如：
+
+~~~html
+<body>
+<script>
+    var age = 18
+    var desc
+    if (age >= 18) {
+        desc = "已成年"
+    } else {
+        desc = "未成年"
+    }
+</script>
+</body>
+~~~
+
+像这种判断非常常见，而每次都要写 if 语句会很麻烦，于是便有了三元运算符。
+
+var desc = age > 18 ? "已成年" : "未成年"，所以比较简单，规律如下：
+
++ condition ? val1 : val2，翻译过来就是 condition 满足吗？满足的话就是 val1，否则是 val2
+
+再来补充一下逻辑运算符，&&、||、!
+
++ && 连接两个布尔值，都为真才为真；
++ || 连接两个布尔值，一个为真就为真；
++ ! 对一个布尔值取反；
+
+然后 JavaScript 还提供了 switch 语句，首先 if 语句里面的分支可以做各种各样的判断，但 switch 语句只能做等值判断，并且是 ===，来看一下。
+
+~~~html
+<body>
+<script>
+    var grade = "D"
+    if (grade === "A") {
+        console.log("best")
+    } else if (grade === "B") {
+        console.log("good")
+    } else if (grade === "C") {
+        console.log("normal")
+    } else {
+        console.log("bad")
+    }
+    
+    // 如果换成 switch 语句
+    switch (grade) {
+        case "A": {
+            console.log("best")
+            break
+        }
+        case "B": {
+            console.log("good")
+            break
+        }
+        case "C": {
+            console.log("normal")
+            break
+        }
+        default: {
+            console.log("bad")
+            break
+        }
+    }
+</script>
+</body>
+~~~
+
+因为 case 有穿透效果，所以结尾处要加上 break。
+
+### 循环
 
 
 
