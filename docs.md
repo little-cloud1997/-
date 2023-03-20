@@ -181,6 +181,8 @@ Vue 的本质就是一个 JavaScript 库（一个普通的 .js 文件），刚�
 
 所以结论很简单，data 函数返回的对象，里面可以包含任意的属性。如果在渲染 template 的时候，发现 {{ ... }} 在对象里面存在，那么就用对应的 value 替换掉；如果不存在，那么替换为空字符串。
 
+> 如果只写 {{ }}，大括号里面啥都没有，那么也会被替换为空字符串。
+
 #### 案例二：展示列表数据
 
 在上面的案例中，要渲染的数据是一个普通的字符串，比较简单。但如果是一个数组呢？
@@ -590,27 +592,394 @@ Vue.createApp 里面有一个 data 属性，它的值是一个函数，函数里
 
 {{ }} 里面只需要传递一个属性即可，至于该属性对应的值，应该在函数里面提前处理好，而不是等到渲染的时候在 {{ }} 里面计算。
 
-#### v-once 指令
+#### v-once 指令（了解）
 
 介绍完 mustache 语法之后，再来看看 Vue 提供的一些指令，它也算是模板语法的一部分。首先 Vue 提供的指令非常多，比如 v-for、v-once、v-bind 等等，这些指令都作为标签的属性而存在，比如 <font color="blue">\<h2 v-for="..."\>\</h2\></font> 等等。
 
-我们要学习的第一个指令就是 v-once，
+我们要学习的第一个指令就是 v-once，它表示内容只会渲染一次。
 
+~~~html
+<body>
+<div id="app">
+    <h2 v-once>当前计数: {{counter}}</h2>
+    <button @click="incr">加 1</button>
+    <button @click="decr">减 1</button>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {counter: 0}
+        },
+        methods: {
+            incr() {
+                this.counter++
+            },
+            decr() {
+                this.counter--
+            }
+        }
+    })
 
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+这是之前计数器的例子，但是在 h2 标签里面加上了一个 v-once，那么它就只会在初始的时候被渲染一次。即使后续修改了 counter 的值，页面中 h2 标签里面的内容也不会发生变化。即使标签是嵌套的，也是如此。
 
+~~~html
+<div id="app">
+    <h2 v-once>
+        <span>当前计数: {{counter}}</span>
+    </h2>
+    <button @click="incr">加 1</button>
+    <button @click="decr">减 1</button>
+</div>
+~~~
 
+counter 发生改变时，同样不会被渲染。但如果 span 标签在 h2 标签的外部，那么两者就没有关系了，h2 是否指定 v-once 和 span 无关。
 
+所以 v-once 用于指定标签元素只被渲染一次。
 
++ 当指定了 v-once，在数据发生变化时，标签元素以及所有的子元素会被视为静态内容并跳过；
++ 该指令可以用于性能优化；
 
+#### v-text 指令和 v-html 指令（了解）
 
+再来看看 v-text 指令，它用于更新元素的 innerText。
 
+~~~html
+<body>
+<div id="app">
+    <h2>{{ message }}</h2>
+    <h2 v-text="message"></h2>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {message: "你好呀"}
+        },
+    })
 
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+代码中的两个 h2 标签是等价的，都是用来更新标签元素的文本内容。但很明显 {{ }} 比 v-text 要更加灵活一些，因为第二个 h2 标签如果本身有内容的话，那么会被替换掉。
 
+注意：如果我们展示的内容包含 HTML 标签，那么会被转义，Vue 不会对它做特别的解析。如果我们希望 HTML 标签能够被识别出来，那么可以使用 v-html。
 
+~~~html
+<body>
+<div id="app">
+    <h2 v-text="message"></h2>
+    <h2 v-html="message"></h2>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {message: `<p style="color: green">你好呀</p>`}
+        },
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/12.png)
+
+区别很明显，v-text 会一律将内容当成纯文本来解析，而 v-html 会将内容当成 HTML 元素来解析。
+
+我们再通过审查元素，看一下两者的区别。
+
+![](pic/13.png)
+
+#### v-pre 指令和 v-cloak 指令（了解）
+
+该指令用于跳过元素和其子元素的编译过程，直接显示原始的 mustache 标签。通过跳过不需要编译的节点，可以加快编译的速度。其实有时候，我们也不希望 Vue 进行解析，比如我们就是想展示 {{ }}，那么这个时候就可以使用 v-pre 指令。
+
+~~~html
+<body>
+<div id="app">
+    <h2>{{ name }}</h2>
+    <h2 v-pre>{{ name }}</h2>
+    <h2 v-pre>{{ }}</h2>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {name: "古明地觉"}
+        },
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/14.png)
+
+v-pre 用的不多，了解一下即可。然后是 v-cloak 指令，它对于当前来说还是有些用处的，不过后续我们会通过编写 .vue 文件的形式开发，到时候 v-cloak 指令就没多大用了。
+
+首先浏览器会自上而下的解析 HTML，并尽可能早地将内容展示在页面上。所以当解析到 {{ }} 的时候，页面其实就已经有内容了，只不过是原始的 {{ }}。然后当浏览器解析到 script 标签时，执行 Vue 相关的代码，再反过来对 {{ }} 进行渲染。只不过这个动作非常快，我们看到的直接就是渲染后的结果。
+
+但如果渲染不及时，比如渲染之前有一段比较耗时的代码，那么最终的效果就是用户会先看到 {{ }}，然后再看到具体的内容，我们举例说明。
+
+~~~html
+<body>
+<div id="app">
+    <h2>{{ name }}</h2>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    setTimeout(
+        () => {
+            const app = Vue.createApp({
+                data() {
+                    return {name: "Your Name"}
+                },
+            })
+            app.mount("#app")
+        }, 2000
+    )
+</script>
+</body>
+~~~
+
+假设两秒之后才能渲染，那么结果就是用户在页面上会先看到 {{ name }}，两秒之后，再看到具体内容 Your Name。
+
+很明显这种体验是不好的，我们不应该让用户看到 mustache 标签这种原始内容。但如果在渲染之前就是需要额外花费一些时间，那么可以给标签元素加上 v-cloak 属性。cloak 的中文翻译是斗篷，所以使用 v-cloak 就相当于给元素添加了一个斗篷，把元素遮起来了，等渲染完毕后再将斗篷给撤掉。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        /* 光有斗篷还不够，还a得让斗篷不显示 */
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <h2 v-cloak>{{ name }}</h2>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    setTimeout(
+        () => {
+            const app = Vue.createApp({
+                data() {
+                    return {name: "古明地觉"}
+                },
+            })
+            app.mount("#app")
+        }, 2000
+    )
+</script>
+</body>
+</html>
+~~~
+
+此时打开页面，不会显示任何内容。但两秒过后，Vue 会将元素上的斗篷给撤掉，从而让元素展示出来，并且展示的元素是渲染过后的。
+
+#### v-memo（了解）
+
+这个指令非常的新，主要是做性能优化的。我们举个例子：
+
+~~~html
+<body>
+<div id="app">
+    <div>
+        <p>{{ name }}</p>
+        <p>{{ age }}</p>
+        <p>{{ gender }}</p>
+    </div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {name: "古明地觉", age: 17, gender: "female"}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+代码非常简单，如果 name、age、gender 发生改变，那么 Vue 会重新渲染。但问题来了，如果我希望只有当 name 发生改变才渲染，age 和 gender 发生改变则忽略掉，该怎么做呢？
+
+~~~html
+<div id="app">
+    <div v-memo="[name]">
+        <p>{{ name }}</p>
+        <p>{{ age }}</p>
+        <p>{{ gender }}</p>
+    </div>
+</div>
+~~~
+
+此时通过 v-memo 指令即可实现，但如果还希望 age 改变时也重新渲染，那么将 v-memo 指定为 "[name, age]" 即可。
+
+#### v-bind 指令（重要）
+
+上面介绍的一系列指令，主要是将值插入到模板内容中。但除了内容需要动态设置之外，一些属性我们也希望能够动态指定。
+
++ 比如动态绑定 a 元素的 href 属性；
++ 比如动态绑定 img 元素的 src 属性；
+
+~~~html
+<body>
+<div id="app">
+    <!--  
+        注意：不要写成了 <img src="{{ imageUrl}}" alt="">  
+        {{ }} 是用在标签内容当中的，而不是标签属性
+        
+        如果要动态修改标签属性，那么在属性名的前面加上一个 v-bind: 
+        比如我们要修改 src 属性，那么指定为 v-bind:src
+        然后属性的值直接写成 "imageUrl" 即可
+     -->
+    <img v-bind:src="imageUrl" alt="">
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {imageUrl: "1.png"}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+此时图片就显示在上面了，再比如绑定超链接。
+
+~~~html
+<a v-bind:href="baidu">点击进入百度</a>
+~~~
+
+在 data 函数返回的对象中，指定 baidu 属性即可。
+
+后续如果改变了 src 和 href，那么页面上显示的图片和超链接也会跟着改变。
+
+那么在开发中，有哪些属性需要动态绑定呢？其实有很多，比如图片的 src，超链接的 href，动态绑定一些类、样式等等。然后 v-bind 还有一个语法糖，就是把 v-bind 给省略掉，只保留一个冒号。
+
+~~~html
+<a v-bind:href="baidu">点击进入百度</a>
+<a :href="baidu">点击进入百度</a>
+~~~
+
+以上两种写法是等价的，但是注意：冒号不可以省略，否则就变成普通的 href 了。
+
+<font color="green">**动态绑定 class**</font>
+
+然后我们使用 v-bind 来绑定一下 class，这一部分非常重要，先来看个例子。
+
+~~~html
+<body>
+<div id="app">
+    <!--  :class 等价于 v-bind:class  -->
+    <div :class="classes">你好</div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {classes: "container box"}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/15.png)
+
+这个例子本身就很简单了，但开发中，有时候元素的 class 也是动态的，比如：
+
++ 当数据为某个状态时，字体显示为红色；
++ 当数据为另一个状态时，字体显示为蓝色；
+
+~~~html
+<body>
+<div id="app">
+    <!--  :class 可以接收一个对象，key 为 class 的名称，value 是布尔值  -->
+    <!--  如果 value 为真，则表示添加该 class，否则不添加  -->
+    <div :class="{box1: true, box2: false, box3: true}">你好</div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/16.png)
+
+由于 box2 对应的 value 为假，所以没有被添加进去。因此这个功能就比较强大了，可以将 class 名称对应的 value 用一个变量保存起来，后续通过修改这个变量，便可控制相应的 class 属性是增加还是删除。
+
+然后这里可能有人会产生疑问，如果里面既有普通的 class 又有动态绑定的 :class，那么以谁为准呢？很简答，这两者是可以结合使用的，:class 会将里面的类名添加到 class 属性里面。
+
+~~~html
+<h2 class="item1" :class="{item2: false, item3: true}"></h2>
+<!-- Vue 解析之后等价于如下 -->
+<h2 class="item1 item3"></h2>
+~~~
+
+非常简单，但如果 :class 里面的内容非常多的话，那么这个标签写起来就会很长，有没有清晰一点的做法呢？
+
+~~~html
+<body>
+<div id="app">
+    <div :class="getClasses()">你好</div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        methods: {
+            "getClasses": function () {
+                return {box1: true, box2: false, box3: true}
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+我们可以将内容放在一个函数中，然后调用这个函数即可。
+
+补充，像 v-text、v-html、v-bind 等等：
+
++ 如果它们后面跟的是 <font color="blue">="xxx"</font>，那么会去 data 函数返回的对象中寻找 xxx 属性；
++ 但如果后面跟的是 <font color="blue">="xxx()"</font>，那么会去 methods 对象中寻找 xxx 函数，然后调用并拿到返回值；
+
+<font color="green">**动态绑定 style**</font>
 
 
 
