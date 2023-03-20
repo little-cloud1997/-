@@ -981,11 +981,88 @@ v-pre 用的不多，了解一下即可。然后是 v-cloak 指令，它对于�
 
 <font color="green">**动态绑定 style**</font>
 
+除了动态绑定 class 之外，还可以动态绑定 style，语法和绑定 class 是一样的。
 
+~~~html
+<!-- fontColor 是 data 函数返回的对象的一个属性 -->
+<h2 :style="{ color: fontColor, 'font-size': '30px'}"
+~~~
 
+JavaScript 的对象，key 是可以不带引号的，比如这里的 color。但有些 key 就比较尴尬了，比如 font-size，如果它不加引号，那么会出现编译错误，因为不符合变量的命名规则。因此我们可以换一种写法，比如 fontSize，改成驼峰的形式，这样也是可以正确解析的，当然使用引号也是可以的。
 
+<font color="green">**动态绑定属性名称**</font>
 
+像 src、href、class、style 等等，这些属性名称是固定的，但在某些情况下，我们属性的名称可能也是不固定的。
 
+如果属性名称不固定，那么可以使用 :[属性名]=值 的格式来定义。
+
+~~~html
+<body>
+<div id="app">
+    <div :[name]="'value'">{{ message }}</div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function() {
+            return {name: "ping", message: "你好"}
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/17.png)
+
+此时就实现了动态绑定属性名称，不过这种用的不多。
+
+<font color="green">**动态绑定对象**</font>
+
+假设我们要动态指定 a 标签的 id、href、target 属性，那么要怎么做呢？
+
+~~~html
+<body>
+<div id="app">
+    <a :href="href" :id="id" :target="target">点击进入</a>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function() {
+            return {href: "http://www.baidu.com", id: "linkId", target: "_blank"}
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+非常简单，但还有一种做法。
+
+~~~html
+<body>
+<div id="app">
+    <a v-bind="info">点击进入</a>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function() {
+            return {
+                info: {href: "http://www.baidu.com", id: "linkId", target: "_blank"}
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+这种做法也是可以的，直接将 v-bind 指定为一个对象，Vue 会遍历该对象，然后将属性依次设置上去。可能目前还感受不到这种做法的优势，后续在给组件传值的时候，就会感受到了，目前只知道可以绑定一个对象即可。
 
 
 
