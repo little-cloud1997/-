@@ -1064,67 +1064,693 @@ JavaScript 的对象，key 是可以不带引号的，比如这里的 color。�
 
 这种做法也是可以的，直接将 v-bind 指定为一个对象，Vue 会遍历该对象，然后将属性依次设置上去。可能目前还感受不到这种做法的优势，后续在给组件传值的时候，就会感受到了，目前只知道可以绑定一个对象即可。
 
+### 事件的监听与绑定
+
+前面我们知道了如何给元素绑定内容和属性，但前端开发中还有一个重要的特性就是交互，因此这个时候就必须要监听用户产生的事件，比如点击、拖拽、键盘事件等等。而监听事件，在 Vue 中通过 v-on 指令实现，比如监听点击事件就是 v-on:click。和 v-bind 一样，v-on 也有一个语法糖，我们之前用过的，就是把 v-on: 整体换成 @，即 @click。
+
+~~~html
+<body>
+<div id="app">
+    <p :style="{display: isDisplay}">我是被隐藏起来的内容</p>
+    <button v-on:click="showMessage">点击查看隐藏内容</button>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {isDisplay: "none"}
+        },
+        methods: {
+            showMessage: function () {
+                this.isDisplay = "block"
+            }
+        }
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/18.png)
+
+一开始上面的文字是没有的，但点击按钮之后，将 p 元素的 display 改成 block，文字就显示出来了。当然，在一开始介绍计数器的时候，我们就已经见过事件绑定了。
+
+当然这里是以单击事件为例，其它事件也是支持的，并且名称不变，直接 @event="function" 即可。然后绑定多个事件也是可以的，比如：
+
+~~~html
+<div @click="xxx" @mousemove="yyy"></div>
+<!-- 或者还有一种写法 -->
+<div v-on="{click: xxx, mousemove: yyy}"></div>
+~~~
+
+绑定多个事件的话，还是建议使用第一种方式，分开绑定，更加清晰一些。
+
+#### 事件函数的参数
+
+当事件发生时会执行相应的处理函数，然后该函数是可以接收参数的。
+
+~~~html
+<body>
+<div id="app">
+    <button @click="btn1">点击</button>
+    <!-- 处理函数里面的参数，也可以来自于 data 函数的返回值里的属性 -->
+    <button @click="btn2('satori', 17)">点击</button>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        methods: {
+            btn1: function (event) {
+                console.log(event)
+            },
+            btn2: function (name, age) {
+                console.log(name, age)
+            }
+        }
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+点击第一个按钮的时候，会触发一个点击事件，然后调用 btn1 函数，而参数 event 保存了事件相关的全部信息。这个 event 在学习 DOM 的时候会遇到，比如你想给 ul 标签下的所有 li 标签都绑定一个事件，可如果 li 标签很多的话，会不方便。那么这个时候可以选择给 ul 绑定，由于事件会向上冒泡，li 发生点击事件会传递给 ul，触发相关函数执行。这个过程就叫做事件委托，把子元素该执行的动作交给父元素来执行，但问题来了，我们怎么知道是哪一个 li 被点击了从而触发 ul 的点击事件呢？这个时候就可以通过 event.target，我们举个例子。
+
+~~~html
+<body>
+<div id="app">
+    <!--  当 li 被点击时，对应文字变成蓝色  -->
+    <!--  我们可以给每个 li 都绑定上一个事件，但是比较麻烦  -->
+    <!--  一个简单的做法是给 ul 绑定  -->
+    <ul>
+        <li>古明地觉</li>
+        <li>古明地恋</li>
+        <li>雾雨魔理沙</li>
+        <li>琪露诺</li>
+    </ul>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    let ul = document.querySelector("#app ul")
+    ul.onclick = function (event) {
+        // 因为 li 是嵌套在 ul 里面的，所以 li 被点击了
+        // 那么同样会触发 ul 的点击事件，这也正是我们想要的
+        // 至于点击了哪一个 li，可以通过 event.target 获取
+        let li = event.target
+        li.style.color = "blue"
+    }
+</script>
+</body>
+~~~
+
+所以点击的时候，会自动传递一个 event 函数。然后点击第二个按钮的时候，会调用 btn2，注意：这里不是调用 btn2 的返回值。如果 btn2 后面没有括号，那么自动加上括号并传递 event 参数（可以不接收）。而一旦加上了括号，那么具体传什么参数就由我们来指定了。
+
++ @click="btn2"，调用的时候自动传递 event 参数；
++ @click="btn2()"，调用的时候不会传递参数，因为加上括号，参数什么的由我们来指定；
+
+那这就产生问题了，我们加上括号是为了传递自定义的参数，但 event 怎么办？很简单。
+
+~~~html
+<body>
+<div id="app">
+    <button @click="btn(name, age, $event)">点击</button>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {"name": "satori", "age": 17}
+        },
+        methods: {
+            btn: function (name, age, event) {
+                console.log(event)
+            },
+        }
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+Vue 提供了一个特殊的语法，通过 $event 来代指 event 对象。
+
+#### v-on 的一些修饰符
+
+v-on 提供了一些修饰符，相当于对事件进行了一些特殊的处理。举个例子：
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+    <style>
+        .box {
+            width: 100px;
+            height: 100px;
+            background-color: #1b6d85;
+        }
+    </style>
+<body>
+<div id="app">
+    <div class="box" @click="divClick">
+        <button @click="btnClick">按钮</button>
+    </div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        methods: {
+            divClick: function () {
+                console.log("divClick")
+            },
+            btnClick() {
+                console.log("btnClick")
+            }
+        }
+    })
+
+    app.mount("#app")
+</script>
+</body>
+</html>
+~~~
+
+前面我们说了事件会冒泡，当按钮被点击时，也会触发 div 的点击事件，那么问题来了，如何阻止这一点呢？
+
+~~~js
+btnClick(event) {
+    event.stopPropagation()
+    console.log("btnClick")
+}
+~~~
+
+非常简单，在 btnClick 里面接收一个 event 参数，然后通过 event.stopPropagation() 阻止事件冒泡即可。但是 v-on 指令，可以让我们更方便地做到这一点。
+
+~~~html
+<body>
+<div id="app">
+    <div class="box" @click="divClick">
+        <button @click.stop="btnClick">按钮</button>
+    </div>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        methods: {
+            divClick: function () {
+                console.log("divClick")
+            },
+            btnClick() {
+                console.log("btnClick")
+            }
+        }
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+我们在 @click 后面加上了 .stop，那么在执行事件函数的时候，会自动加上 event.stopPropagation()，阻止事件冒泡。
+
+当然还有很多其它事件，比如：
+
+![](pic/19.png)
+
+不过用的都不多，了解一下即可。
+
+### 条件渲染
+
+在某些情况下，我们需要根据当前条件来决定某些元素或组件是否被渲染，这时候就需要进行条件判断了，而 Vue 提供了以下指令。
+
++ v-if
++ v-else
++ v-else-if
++ v-show
+
+~~~html
+<body>
+<div id="app">
+    <h2 v-if="score > 90">
+        <p>你的成绩是 A</p>
+    </h2>
+
+    <h2 v-else-if="score > 85">
+        <p>你的成绩是 B</p>
+    </h2>
+
+    <h2 v-else-if="score > 60">
+        <p>你的成绩是 C</p>
+    </h2>
+
+    <h2 v-else>
+        <p>你的成绩是 D</p>
+    </h2>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {"score": 91}
+        },
+    })
+
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/20.png)
+
+非常简单，说白了就是在标签里面指定 v-if、v-else-if、v-else，当条件成立时，指定的标签元素以及内部的子元素才会被渲染。并且这些都是惰性的，当条件为 false 时，其判断的内容完全不会被渲染，整个 DOM 树都会被销毁掉。当条件为 true 时，才会真正渲染条件块里的内容。
+
+#### template 标签
+
+来看一段代码：
+
+~~~html
+<div id="app">
+    <div v-if="score > 90">
+        <p>你的成绩是 A</p>
+    </div>
+
+    <div v-else-if="score > 85">
+        <p>你的成绩是 B</p>
+    </div>
+
+    <div v-else-if="score > 60">
+        <p>你的成绩是 C</p>
+    </div>
+
+    <div v-else>
+        <p>你的成绩是 D</p>
+    </div>
+</div>
+~~~
+
+我们的目的是为了展示里面的 p 元素，实际上外层的 div 只是起到了一个包裹的作用。我们当前每个条件块里面只有一行代码，所以把外层的 div 去掉，将 v-if 等指令写在 p 标签上面也是可以的，但如果条件块里面有多行就不行了。
+
+不过这个 div 确实没啥卵用，浏览器在渲染的时候也会对它解析，会浪费性能。所以我们可以将 div 换成 template 标签，而 template 标签浏览器是不会渲染的，这样既节省了资源， 也可以很好地起到限定作用。
+
+~~~html
+<div id="app">
+    <template v-if="score > 90">
+        <p>你的成绩是 A</p>
+    </template>
+
+    <template v-else-if="score > 85">
+        <p>你的成绩是 B</p>
+    </template>
+
+    <template v-else-if="score > 60">
+        <p>你的成绩是 C</p>
+    </template>
+
+    <template v-else>
+        <p>你的成绩是 D</p>
+    </template>
+</div>
+~~~
+
+![](pic/21.png)
+
+我们看到渲染之后并没有出现 template 标签。
+
+因为 v-if 是一个指令，所以必须将其添加到一个元素上，但如果我们希望切换的是多个元素呢？此时需要通过 div 起到一个限定作用，但我们又不希望浏览器多渲染一个标签，那么这时候可以使用 template 标签，它可以当做不可见的包裹元素，并且不会被渲染，类似于小程序的 block。
+
+最后再来补充一个 v-show 指令，它和 v-if  的用法是一致的，也是根据条件决定是否显示元素或者组件。但它和 v-if 有些区别：
+
++ v-show 不支持 template；
++ v-show 不可以和 v-else 一起使用；
+
+然后最本质的区别还是：
+
++ v-show 无论元素是否需要显示在浏览器上，它的 DOM 都是存在的，只是通过 CSS 的 display 进行切换；
++ v-if 当条件为 false 时，它对应的元素根本不会渲染到 DOM 中；
+
+所以 v-show 无法搭配 template 使用，因为这个标签不会渲染在浏览器上，标签都没了，那还谈什么 CSS 呢？
+
+那么这两者应该如何选择呢？
+
++ 如果元素需要在显示和隐藏之间频繁切换，那么使用 v-show。因为它不会频繁新增和销毁元素，只是改变了 CSS 的属性；
++ 如果不会发生频繁切换，那么使用 v-if；
+
+### 详解 v-for 指令
+
+在实际开发中，我们往往会拿到一组数据，并且需要对其进行渲染。这个时候可以使用 v-for 来完成，v-for 类似于 JavaScript 的 for 循环，可以用来遍历一组数据。
+
+~~~html
+<body>
+<div id="app">
+    <h2>来自东方的少女们</h2>
+    <!--  会对 girls 进行遍历，遍历出来的元素命名为 girl  -->
+    <!--  这里 girls 的长度是多少，就会生成多少个 p 标签  -->
+    <p v-for="girl in girls">name: {{girl.name}}, where: {{girl.where}}</p>
+    <!--  还可以通过 "(girl, index) in girls" 进行遍历，这样遍历的同时还能拿到索引  -->  
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {
+                "girls": [{"name": "古明地觉", "where": "地灵殿"},
+                    {"name": "雾雨魔理沙", "where": "魔法深林"},
+                    {"name": "芙兰朵露", "where": "红魔馆"}]
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/22.png)
+
+然后 v-for 除了遍历数组之外，也可以遍历对象。
+
++ "val in obj"
++ "(val, key) in obj"
++ "(val, key, index) in obj"
+
+~~~html
+<body>
+<div id="app">
+    <h2>来自东方的少女们</h2>
+    <p v-for="(val, key) in girls">{{ key }}: {{ val }}</p>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {
+                "girls": {"name": "古明地觉", "where": "地灵殿"}
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/23.png)
 
 
 
+非常简单，当然啦，除了数组和对象，v-for 也可以遍历字符串，此时得到的就是一个个字符。另外数字也是可以的，比如 item in 10，那么会从 1 遍历到 10。
 
+#### 监听数组是否更新
 
+Vue 将被监听的数组的变更方法进行了包裹，所以它们也将会触发视图的更新。
 
+~~~html
+<body>
+<div id="app">
+    <h2>来自东方的少女们</h2>
+    <p v-for="girl in girls">{{ girl }}</p>
+    <button @click="addGirl">点击添加一个 girl</button>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {
+                "girls": ["古明地觉", "芙兰朵露", "琪露诺"]
+            }
+        },
+        methods: {
+            addGirl() {
+                this.girls.push("新添加的 girl")
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+![](pic/24.png)
 
+那么 Vue 都对数组的哪些方法进行监听呢？只要会改变原数组的方法，Vue 都会监听。如果不改变原数组，那么操作完之后需要重新赋值。
 
+#### 和 v-for 绑定的 key 属性
 
+在使用 v-for 进行列表或对象渲染时，我们通常会给元素或组件绑定一个 key 属性，而这个 key 一般是唯一的。
 
+~~~html
+<!-- 注意：如果是 key="item"，那么 item 就是普通的字符串 -->
+<!-- 而 :key="item"，那么 item 就是 v-for 里面遍历出来的 item -->
+<p v-for="item in iter" :key="item">{{ item }}</p>
+~~~
 
+那么这个 key 属性到底有什么用呢？要明白这一点，我们需要先了解一下什么是 VNode。
 
+VNode 的翻译是虚拟节点，它是基于组件或元素创建出来的，由于目前还没有学习组件，暂时就理解为是 HTML 创建出来的 VNode。总之，不论是组件还是 HTML 元素，它们在 Vue 中表现出来的都是一个个的 VNode，而 VNode 本质上就是一个普通的 JavaScript 对象。
 
+所以 template 会先变成 VNode，然后 VNode 再变成真实的 DOM，最终添加到浏览器中展示给用户。当然这只是一个 VNode，如果有很多元素，并且出现嵌套，那么就会对应很多 VNode，而这些 VNode 会组成一颗树（VNode Tree），也被称为虚拟 DOM。而虚拟 DOM 最终再映射成真实 DOM，展示在浏览器上。
 
+以上就是 Vue 在渲染的时候所干的事情。
 
+估计有人会好奇，为什么 Vue 不直接 template 中的标签（比如 ul）直接创建出相应的元素，而是非要搞出虚拟节点（组成虚拟 DOM）呢？
 
+1）第一个原因，有了虚拟 DOM 之后就可以跨平台了，因为虚拟 DOM 只是一个 JavaScript 对象。只要能对虚拟 DOM 进行解析，那么一个平台编写的控件，可以渲染到多个平台上。比如移动端、桌面端、VR 设备等等；
 
+2）实现 diff 算法；
 
+假设有一个 ul，里面有 5 个 li，内容分别是 a、b、c、d、e，现在要在 b 的后面插入一个 f，那么应该怎么做呢？首先最简单的做法，就是将 5 个 li 全部删掉，然后再按照 a、b、f、c、d、e 的顺序创建 6 个 li，并渲染上去。但很明显这么做没有必要，因为其它的几个节点都没有变化，不应该采用全部的删除再重新构建的方式，那样性能就太低了。
 
+另一种方式就是对比元素，a、b 不需要动，后面的元素依次更新。
 
+![](pic/25.png)
 
+这么做的效率也不高，而在没有设置 key 的情况下，Vue 就是这么做的。显然在插入元素的情况下效率是不高的，因为要不断对比元素并更新，当然追加的效率是没问题的。
 
+所以最好的办法是直接插入一个元素即可，其它元素不需要动。但 Vue 是不知道的，它不知道 c d e 前后是不需要变化的，而如果我们设置了 key 就不一样了。有了 key 之后，Vue 就会进行对比，尽可能地复用重复的节点。
 
+而对于 Vue 而言，有 key 和没有 key，Vue 执行的方法是不同的。
 
++ 有 key，执行 patchKeyedChildren 方法；
++ 没有 key，执行 patchUnkeyedChildren 方法；
 
+![](pic/26.png)
 
+在使用 v-for 的时候，一般都会执行 key，为了效率。
 
+### 处理复杂的数据（computed 属性）
 
+在模板中可以通过一些插值语法显然一些 data 中的数据，但某些情况下我们需要对数据进行一些转化后再显示，或者将多个数据结合起来进行显示。
 
++ 比如我们需要对多个 data 数据进行运算、通过三元运算符来决定结果、数据进行某种转换后显示；
++ 在模板中使用表达式可以非常方便地实现，但设计它们的初衷是为了简单的运算；
++ 在模板中放入太多的逻辑会让模板过重，且难以维护；
++ 如果多个地方都要使用，那么会有大量重复的代码；
 
+那么有没有什么方法将逻辑抽离出去呢？其中一个做法就是将逻辑抽离到 methods 对象中，举个例子。
 
+~~~html
+<body>
+<div id="app">
+    <p>{{ firstname + " " + lastname }}</p>
+    <p>{{ fullname() }}</p>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {
+                firstname: "komeiji",
+                lastname: "satori"
+            }
+        },
+        methods: {
+            fullname() {
+                return `${this.firstname} ${this.lastname}`
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+这两种效果都是一样的，当数据比较复杂时，定义在一个单独的方法中，然后模板表达式尽可能地简单。但这样做也有一个弊端，就是所有 data 的使用过程都变成了一个方法的调用。所以我们还推荐一种方式，就是使用计算属性 computed。
 
+关于计算属性，官方没有给出直接的概念解释，而是说：对于任何包含响应式数据（说白了就是 data 函数返回的数据）的复杂逻辑，都应该使用计算属性。
 
+~~~html
+<body>
+<div id="app">
+    <p>{{ firstname + " " + lastname }}</p>
+    <p>{{ fullname }}</p>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {
+                firstname: "komeiji",
+                lastname: "satori"
+            }
+        },
+        computed: {
+            // 和 methods 一样，computed 也是一个对象
+            // 并且通过 this 可以访问 data 数据中的属性
+            // 然后模板在使用的时候，直接通过 {{ fullname }} 即可
+            fullname: function () {
+                return `${this.firstname} ${this.lastname}`
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+所以从效果上来，计算属性 computed 和 methods 是类似的，无非 computed 在使用上更简洁一点。但 computed 的一大优势是，它是有缓存的，速度会快一些。
 
+~~~html
+<!-- 使用 methods，函数会执行 3 次 -->
+<p>{{ fullname() }}</p>
+<p>{{ fullname() }}</p>
+<p>{{ fullname() }}</p>
 
+<!-- 使用 computed，函数只会执行 1 次 -->
+<p>{{ fullname }}</p>
+<p>{{ fullname }}</p>
+<p>{{ fullname }}</p>
+~~~
 
+计算属性会基于它们的依赖关系进行缓存，比如 fullname 依赖 firstname 或 lastname，当数据不发生改变时，计算属性是不需要重新计算的。但如果依赖的数据发生变化，那么在使用时就会重新计算了，页面上显示的内容（这里是 fullname）也会改变。
 
+### 监听器 watch
 
+什么是监听器呢？我们在 data 函数返回的对象中定义了数据，这个数据通过插值语法的方式绑定到 template 中。当数据变化时，template 会自动进行更新来显示最新的数据。但在某些情况下，我们希望在代码逻辑中监听某个数据的变化，这时候就需要用监听器 watch 来完成了。
 
+~~~html
+<body>
+<div id="app">
+    <p>{{ message }}</p>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {message: "你好"}
+        },
+        watch: {
+            message: function () {
+                console.log("data 数据的 message 属性发生改变了")
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+当 data 对象中 message 属性发生改变时，watch 对象中 message 对应的函数就会执行，比较简单。但现在我们只知道属性改变了，但改变成啥了，以及之前是啥我们并不知道。
 
+所以函数是有参数的：
 
+~~~js
+watch: {
+    message: function (newValue, oldValue) {
+        console.log("data 数据的 message 属性发生改变了")
+    }
+}
+~~~
 
+通过 newValue 和 oldValue 便可拿到新的值和旧的值。但对于对象来说，拿到的不是值本身，而是值的代理，不过操作是没有影响的。
 
+#### watch 的配置项
 
+看一段代码：
+~~~html
+<body>
+<div id="app">
+    <p>{{ info.name }}</p>
+    <button @click="changeInfo">改变 info</button>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {info: {"name": "古明地觉"}}
+        },
+        methods: {
+            changeInfo() {
+                this.info = {"name": "古明地恋"}
+            }  
+        },
+        watch: {
+            info: function () {
+                console.log("data 数据的 info 属性发生改变了")
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+如果点击按钮，那么页面上的内容会发生改变，并且 watch 对象里的 info 函数也会执行，显然这是没问题的，因为对 info 重新赋值了。不过对于复杂对象来说，修改数据有两种方式：一种是直接重新赋值，另一种是原地修改。如果是重新赋值，那么 template 会感知到，watch 里的函数也会执行。
 
+但如果是本地修改，比如 this.info.name = "...." 这种，那么 template 依旧会感知到，因为数据发生改变了。但此时 watch 里面的 info 函数是不会执行，所以对于 watch 而言，它默认不会开启数据的深度监听，只能显示开启。
 
+~~~html
+<body>
+<div id="app">
+    <p>{{ info.name }}</p>
+    <button @click="changeInfo">改变 info</button>
+</div>
 
+<script src="./vue.js"></script>
+<script>
+    const app = Vue.createApp({
+        data: function () {
+            return {info: {"name": "古明地觉"}}
+        },
+        methods: {
+            changeInfo() {
+                this.info.name = "古明地恋"
+            }
+        },
+        watch: {
+            // 此时 info 接收的是对象，里面定义一个 handler 表示处理函数
+            // 在内部只有一个 handler 的情况下，可以直接定义一个函数是等价的
+            // 后者相当于前者的语法糖。但下面这种方式，还可以包含其它属性
+            info: {
+                handler() {
+                    console.log("data 数据的 info 属性发生改变了")
+                },
+                // 开启深度监听，虽然监听的是 info，但 info 里面的 key 的变化也要监听
+                deep: true
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
-
-
-
+通过 deep 属性可以开启深度监听，此外还有一个属性比较常用叫 immediate，如果为 true 那上来先执行一次监听器函数。此时 newValue 为设置的值，oldValue 为 undefined，相当于之前是没有这个值的，但赋上了这个值。
 
 
 
