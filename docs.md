@@ -1752,9 +1752,394 @@ watch: {
 
 通过 deep 属性可以开启深度监听，此外还有一个属性比较常用叫 immediate，如果为 true 那上来先执行一次监听器函数。此时 newValue 为设置的值，oldValue 为 undefined，相当于之前是没有这个值的，但赋上了这个值。
 
+### 综合案例：购物车
 
+基于以上学到的知识，我们用 Vue 来做一个书籍购物车，大致效果如下：
 
+![](pic/27.png)
 
+要求：
+
++ 在界面上以表格的形式，展示一些书籍的数据；
++ 在底部显示书籍的总价格；
++ 点击 + 或 - 可以增加或减少书籍数量，如果为 1，那么不能继续减；
++ 点击移除按钮，可以将书籍移除（当所有书籍都移除完毕时，显示购物车为空）；
+
+这个案例虽然小，但是它将大部分知识点都综合起来了，我们来看一下怎么做。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #app table {
+            /* 边框之间没有缝隙 */
+            border-collapse: collapse;
+        }
+
+        thead {
+            /* thead 设置个背景 */
+            background-color: #f5f5f5;
+        }
+
+        #app th, td {
+            /* 给 th 和 td 设置边框和内边距 */
+            border: 1px solid #aaa;
+            padding: 8px 16px;
+            /* 文字加粗并居中 */
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* 给 button 设置一些样式 */
+        #app button {
+            padding: 5px 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <table>
+        <thead>
+        <tr>
+            <th></th>
+            <th>书籍名称</th>
+            <th>出版日期</th>
+            <th>价格</th>
+            <th>购买数量</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <!--  对于 v-for 指令，最好设置一个 key，并且 key 不重复  -->
+        <tr v-for="book in books" :key="book.id">
+            <td>{{ book.id }}</td>
+            <td>{{ book.name }}</td>
+            <td>{{ book.date }}</td>
+            <td>￥{{ book.price }}</td>
+            <td>
+                <button>-</button>
+                {{ book.count }}
+                <button>+</button>
+            </td>
+            <td><button>移除</button></td>
+        </tr>
+        </tbody>
+    </table>
+    <h2>总价: ￥{{ totalAmount }}</h2>
+</div>
+<script src="./vue.js"></script>
+<script>
+    let books = [
+        {id: 1, name: "《算法导论》", date: "2006-9", price: 85, count: 1},
+        {id: 2, name: "《UNIX 编程艺术》", date: "2006-2", price: 59, count: 1},
+        {id: 3, name: "《编程珠玑》", date: "2008-10", price: 39, count: 1},
+        {id: 4, name: "《代码大全》", date: "2006-3", price: 128, count: 1},
+    ]
+    const app = Vue.createApp({
+        data() {
+            return {books: books}
+        },
+        computed: {
+            totalAmount: function () {
+                let amount = 0
+                for (let book of this.books) {
+                    amount += book.price * book.count
+                }
+                return amount
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+</html>
+~~~
+
+此时基本页面我们就搭完了，然后再给按钮绑定一个点击事件即可。
+
+![](pic/28.png)
+
+除了样式有些不同之外，基本是一致的，然后我们来完成剩下的功能。
+
++ 点击 +，数量加 1，同时总价也要变。不过显然我们不需要调整总价，因为 count 修改之后，总价会自动变，这就是声明式的好处；
++ 点击移除，书籍自动删除；
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #app table {
+            /* 边框之间没有缝隙 */
+            border-collapse: collapse;
+        }
+
+        thead {
+            /* thead 设置个背景 */
+            background-color: #f5f5f5;
+        }
+
+        #app th, td {
+            /* 给 th 和 td 设置边框和内边距 */
+            border: 1px solid #aaa;
+            padding: 8px 16px;
+            /* 文字加粗并居中 */
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* 给 button 设置一些样式 */
+        #app button {
+            padding: 5px 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <table>
+        <thead>
+        <tr>
+            <th></th>
+            <th>书籍名称</th>
+            <th>出版日期</th>
+            <th>价格</th>
+            <th>购买数量</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <!--  对于 v-for 指令，最好设置一个 key，并且 key 不重复  -->
+        <tr v-for="(book, index) in books" :key="book.id">
+            <td>{{ book.id }}</td>
+            <td>{{ book.name }}</td>
+            <td>{{ book.date }}</td>
+            <td>￥{{ book.price }}</td>
+            <td>
+                <!-- 所有的 - 和 + 按钮绑定的都是同一个 decrCount 和 incrCount 函数 -->
+                <!-- 那么点击的时候，我们怎么知道用户点击的是哪一本书的 - 或 + 按钮呢 -->
+                <!-- 因此要拿到点击的按钮对应的书籍在 books 中的索引，然后才能修改数量 -->
+                <!-- 如果写成 "decrCount"，那么调用时会自动传递一个 event，而现在由我们来指定了 -->
+                <!-- 但也可以可以手动指定参数，告诉 Vue 事件发生时，函数应该怎么调用 -->
+
+                <!-- 注意：这里的 disabled，当书籍的数量为 1 时，禁用按钮 -->
+                <button :disabled="book.count === 1" @click="decrCount(index)">-</button>
+                {{ book.count }}
+                <button @click="incrCount(index)">+</button>
+            </td>
+            <td><button>移除</button></td>
+        </tr>
+        </tbody>
+    </table>
+    <h2>总价: ￥{{ totalAmount }}</h2>
+</div>
+<script src="./vue.js"></script>
+<script>
+    let books = [
+        {id: 1, name: "《算法导论》", date: "2006-9", price: 85, count: 1},
+        {id: 2, name: "《UNIX 编程艺术》", date: "2006-2", price: 59, count: 1},
+        {id: 3, name: "《编程珠玑》", date: "2008-10", price: 39, count: 1},
+        {id: 4, name: "《代码大全》", date: "2006-3", price: 128, count: 1},
+    ]
+    const app = Vue.createApp({
+        data() {
+            return {books: books}
+        },
+        methods: {
+            decrCount(index) {
+                // 其实将 book 传过来也是可以的，然后直接修改 book.count 即可
+                this.books[index].count--
+            },
+            incrCount(index) {
+                this.books[index].count++
+            }
+        },
+        computed: {
+            totalAmount: function () {
+                let amount = 0
+                for (let book of this.books) {
+                    amount += book.price * book.count
+                }
+                return amount
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+</html>
+~~~
+
+![](pic/29.png)
+
+此时功能就基本实现了，点击 + 数量增加，点击 - 数量减少，总价也会自动改变。最后再来把移除的功能给实现，这个功能也很简单，点击之后，直接把数组中指定索引的元素给删掉即可，页面会自动刷新。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #app table {
+            /* 边框之间没有缝隙 */
+            border-collapse: collapse;
+        }
+
+        thead {
+            /* thead 设置个背景 */
+            background-color: #f5f5f5;
+        }
+
+        #app th, td {
+            /* 给 th 和 td 设置边框和内边距 */
+            border: 1px solid #aaa;
+            padding: 8px 16px;
+            /* 文字加粗并居中 */
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* 给 button 设置一些样式 */
+        #app button {
+            padding: 5px 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <table>
+        <thead>
+        <tr>
+            <th></th>
+            <th>书籍名称</th>
+            <th>出版日期</th>
+            <th>价格</th>
+            <th>购买数量</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr v-for="(book, index) in books" :key="book.id">
+            <td>{{ book.id }}</td>
+            <td>{{ book.name }}</td>
+            <td>{{ book.date }}</td>
+            <td>￥{{ book.price }}</td>
+            <td>
+                <button :disabled="book.count === 1" @click="decrCount(index)">-</button>
+                {{ book.count }}
+                <button @click="incrCount(index)">+</button>
+            </td>
+            <td><button @click="removeBook(index)">移除</button></td>
+        </tr>
+        </tbody>
+    </table>
+    <h2>总价: ￥{{ totalAmount }}</h2>
+</div>
+<script src="./vue.js"></script>
+<script>
+    let books = [
+        {id: 1, name: "《算法导论》", date: "2006-9", price: 85, count: 1},
+        {id: 2, name: "《UNIX 编程艺术》", date: "2006-2", price: 59, count: 1},
+        {id: 3, name: "《编程珠玑》", date: "2008-10", price: 39, count: 1},
+        {id: 4, name: "《代码大全》", date: "2006-3", price: 128, count: 1},
+    ]
+    const app = Vue.createApp({
+        data() {
+            return {books: books}
+        },
+        methods: {
+            decrCount(index) {
+                // 其实将 book 传过来也是可以的，然后直接修改 book.count 即可
+                this.books[index].count--
+            },
+            incrCount(index) {
+                this.books[index].count++
+            },
+            removeBook(index) {
+                // 从指定索引的位置开始，删除 1 条
+                this.books.splice(index, 1)
+            }
+        },
+        computed: {
+            totalAmount: function () {
+                let amount = 0
+                for (let book of this.books) {
+                    amount += book.price * book.count
+                }
+                return amount
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+</html>
+~~~
+
+![](pic/30.png)
+
+至此，功能就基本都实现了。
+
+但其实还有一点问题，就是当书籍全部被删除的时候，就会变成这样。
+
+![](pic/31.png)
+
+显然这样是不好的，应该提示用户：你的购物车为空，请添加书籍。
+
+~~~html
+<div id="app">
+    <!--  只有 books 的长度大于 0 的时候，才渲染表格，否则提示相应的文字  -->
+    <template v-if="books.length > 0">
+        <table>
+            <thead>
+            <tr>
+                <th></th>
+                <th>书籍名称</th>
+                <th>出版日期</th>
+                <th>价格</th>
+                <th>购买数量</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr v-for="(book, index) in books" :key="book.id">
+                <td>{{ book.id }}</td>
+                <td>{{ book.name }}</td>
+                <td>{{ book.date }}</td>
+                <td>￥{{ book.price }}</td>
+                <td>
+                    <button :disabled="book.count === 1" @click="decrCount(index)">-</button>
+                    {{ book.count }}
+                    <button @click="incrCount(index)">+</button>
+                </td>
+                <td><button @click="removeBook(index)">移除</button></td>
+            </tr>
+            </tbody>
+        </table>
+    </template>
+    
+    <template v-else>
+        <h2>购物车是空的，请添加书籍</h2>
+    </template>
+    <h2>总价: ￥{{ totalAmount }}</h2>
+</div>
+~~~
+
+![](pic/32.png)
+
+此时才算是真的大功告成。
 
 
 
