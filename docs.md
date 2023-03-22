@@ -2141,61 +2141,768 @@ watch: {
 
 此时才算是真的大功告成。
 
+不过追求刺激要贯彻到底，我们再加点需求，当鼠标悬浮在某一行的时候，背景变颜色。
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        #app table {
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #f5f5f5;
+        }
+
+        #app th, td {
+            border: 1px solid #aaa;
+            padding: 8px 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #app button {
+            padding: 5px 10px;
+            font-weight: bold;
+        }
+
+        .active {
+            background-color: #3fc3ee;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <template v-if="books.length > 0">
+        <table>
+            <thead>
+            <tr>
+                <th></th>
+                <th>书籍名称</th>
+                <th>出版日期</th>
+                <th>价格</th>
+                <th>购买数量</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+
+            <!-- 给 tr 绑定一个 class 叫 active，如果它的 value 为真，那么设置该属性  -->
+            <!-- 会将 index 和 currentIndex 做比较，鼠标停在哪一行，就将 currentIndex 设置为当前的 index -->
+            <tbody>
+            <tr v-for="(book, index) in books" :key="book.id"
+                :class="{active: index === currentIndex}" @mouseover="changeBgColor(index)">
+                <td>{{ book.id }}</td>
+                <td>{{ book.name }}</td>
+                <td>{{ book.date }}</td>
+                <td>￥{{ book.price }}</td>
+                <td>
+                    <button :disabled="book.count === 1" @click="decrCount(index)">-</button>
+                    {{ book.count }}
+                    <button @click="incrCount(index)">+</button>
+                </td>
+                <td><button @click="removeBook(index)">移除</button></td>
+            </tr>
+            </tbody>
+        </table>
+    </template>
+
+    <template v-else>
+        <h2>购物车是空的，请添加书籍</h2>
+    </template>
+    <h2>总价: ￥{{ totalAmount }}</h2>
+</div>
+
+<script src="./vue.js"></script>
+<script>
+    let books = [
+        {id: 1, name: "《算法导论》", date: "2006-9", price: 85, count: 1},
+        {id: 2, name: "《UNIX 编程艺术》", date: "2006-2", price: 59, count: 1},
+        {id: 3, name: "《编程珠玑》", date: "2008-10", price: 39, count: 1},
+        {id: 4, name: "《代码大全》", date: "2006-3", price: 128, count: 1},
+    ]
+    const app = Vue.createApp({
+        data() {
+            return {books: books, currentIndex: -1}
+        },
+        methods: {
+            decrCount(index) {
+                this.books[index].count--
+            },
+            incrCount(index) {
+                this.books[index].count++
+            },
+            removeBook(index) {
+                this.books.splice(index, 1)
+            },
+            changeBgColor(index){
+                this.currentIndex = index
+            }
+        },
+        computed: {
+            totalAmount: function () {
+                let amount = 0
+                for (let book of this.books) {
+                    amount += book.price * book.count
+                }
+                return amount
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+</html>
+~~~
+
+![](pic/33.png)
+
+还是蛮有意思的，使用 Vue 核心就在于声明，后续改变时会自动刷新。
+
+### 双向绑定之 v-model 指令
+
+表单提交是开发中非常常见的功能，也是和用户交互的重要手段：
+
++ 比如用户在登录注册时需要提交账号密码；
++ 比如用户在检索、创建、更新信息时，需要提交一些数据；
+
+这些都要求我们可以在代码逻辑中获取到用户提交的数据，而完成这一功能的就是 v-model 指令。
+
++ v-model 指令可以在标签 input、textarea 以及 select 元素上创建双向绑定；
++ 它会根据控件的类型自动选取正确的方法来更新元素；
++ 尽管有些神奇，但 v-model 本质不过是语法糖，它负责监听用户的输入事件来更新数据，并在某种极端场景下进行一些特殊处理；
+
+~~~html
+<div id="app">
+    <input type="text" value="你好">
+</div>
+~~~
+
+input 是一个单标签元素，输入框里面的值是通过 value 属性体现的。
+
+![](pic/34.png)
+
+如果我们想动态绑定输入框的值，该怎么做呢？
+
+~~~html
+<body>
+<div id="app">
+    <!--  :attr 最终操作的都是 attr，比如 :value 最终操作的也是 value  -->
+    <!--  只不过使用 v-bind 可以实现动态绑定，这里 Vue 就会解析成 value="你好，世界"  -->
+    <input type="text" :value="message">
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {message: "你好，世界"}
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/35.png)
+
+但这里有一个问题，就是 v-bind 是单向绑定，可以将 data 函数返回对象的属性绑定到标签元素中。对于那些内容默认无法改变的标签来说，是没有问题的，但 input 比较特殊，它是可以接收用户输入的，内容可以变，那么我们怎么将用户输入的内容再体现在 message 属性当中呢？
+
+~~~html
+<body>
+<div id="app">
+    <!--  当 input 的内容发生改变的时候，会触发 input 事件  -->
+    <input type="text" :value="message" @input="changeMessage">
+    <h2>该内容会和输入框保持同步：{{ message }}</h2>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {message: "你好，世界"}
+        },
+        methods: {
+            changeMessage(event) {
+                // event.target 是产生事件的标签，这里就是 input
+                // 调用 value 拿到输入框的值，然后赋给 message
+                this.message = event.target.value
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/36.png)
+
+是不是很有趣呢？我们在输入框输入内容，下面的文字会自动与之同步。
+
+但这个过程稍微有些麻烦，因为要额外定义一个方法，整个过程就相当于我们基于单向绑定手动实现了双向绑定。但 Vue 已经提供了双向绑定，我们直接使用 v-model 指令即可。
+
+~~~html
+<body>
+<div id="app">
+    <input type="text" v-model="message">
+    <h2>该内容会和输入框保持同步：{{ message }}</h2>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {message: "你好，世界"}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+直接就搞定了，和之前的效果是一样的，这就是基于 v-model 实现的双向绑定。
+
+比如我们实现一个用户名密码登录：
+
+~~~html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+
+        button {
+            padding: 5px 10px;
+            background-color: floralwhite;
+        }
+
+        #app div {
+            margin-top: 10px
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div>
+        <span>用户名：</span>
+        <label for="username">
+            <input id="username" type="text" v-model="username">
+        </label>
+    </div>
+
+    <div>
+        <span>密码：</span>
+        <label for="password">
+            <input id="password" type="password" v-model="password">
+        </label>
+    </div>
+
+    <div>
+        <span>登录：</span>
+        <button @click="login">√</button>
+    </div>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {username: "", password: ""}
+        },
+
+        methods: {
+            login() {
+                alert(`你的用户名为 ${this.username}, 密码为 ${this.password}`)
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+</html>
+~~~
+
+![](pic/37.png)
+
+非常简单，而 v-model 的原理也像我们之前说的那样，是一个语法糖，它的背后有两个操作：
+
++ v-bind 绑定 value 属性的值；
++ v-on 绑定 input 事件监听到函数中，函数会获取最新的值并赋值到绑定的属性中；
+
+#### 绑定 textarea
+
+而 v-model 除了绑定 input，还可以绑定 textarea。
+
+~~~html
+<body>
+<div id="app">
+    <textarea cols="30" rows="10" v-model="content"></textarea>
+    <p>你输入了: {{ content }}</p>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {content: ""}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/38.png)
+
+#### 绑定 checkbox
+
+然后是 v-model 绑定 checkbox。
+
+~~~html
+<body>
+<div id="app">
+    <label for="agree">
+        <input id="agree" type="checkbox" v-model="isAgree"> 同意协议
+    </label>
+    <p>isAgree: {{ isAgree }}</p>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {isAgree: false}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/39.png)
+
+点击之后 isAgree 变成 true，再点击继续变成 false。如果一开始就将 isAgree 设置成 true，那么体现在 checkbox 当中，就是勾选框一开始就处于选中状态。
+
+然后我们这里只有一个选项，也就是单选框，这种情况下，绑定到属性中的值是一个布尔值。但如果是多选框呢？checkbox 可以支持同时选择多个，如何将用户选择的多个选项保存起来呢？
+
+~~~html
+<body>
+<div id="app">
+    <h2>选择你的爱好：</h2>
+    <label for="sing">
+        <!--    多选框除了指定 v-model 之外，还必须绑定一个 value 值    -->
+        <!--    v-model 是一个数组，选中了对应的 value 就会放到数组里面    -->
+        <!--    即使不是 Vue，那么 checkbox 也应该绑定 value，这是要传给后端的    -->
+        <input id="sing" type="checkbox" value="SING" v-model="hobbies">唱
+    </label>
+    <label for="dance">
+        <input id="dance" type="checkbox" value="DANCE" v-model="hobbies">跳
+    </label>
+    <label for="rap">
+        <input id="rap" type="checkbox" value="RAP" v-model="hobbies">rap
+    </label>
+    <label for="basketball">
+        <input id="basketball" type="checkbox" value="BASKETBALL" v-model="hobbies">篮球
+    </label>
+    <p>爱好: {{ hobbies }}</p>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {hobbies: []}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/40.png)
+
+所以如果是多个复选框，因为可以选中多个，那么对应 data 函数返回的对象的属性就是一个数组。当选中某一个时，input 的 value 就会被添加到数组中。但如果是单选框，那么有没有 value 均可，value 不会影响 v-model。
+
+#### 绑定 radio
+
+checkbox 可以单选、可以多选，但 radio 只能单选，因为多个选项会互斥，通过指定同一个 name。
+
+~~~html
+<body>
+<div id="app">
+    <h2>选择你的性别：</h2>
+    <!--  也必须指定一个 value，否则拿到就是一个字符串 on，表示选中了，但谁被选中了则不知道  -->
+    <label for="male">
+        <input id="male" type="radio" value="male" v-model="gender" name="gender">男
+    </label>
+    <label for="female">
+        <input id="female" type="radio" value="female" v-model="gender" name="gender">女
+    </label>
+
+    <p>性别: {{ gender }}</p>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {gender: ""}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/41.png)
+
+这里补充一点，对于 radio 而言，要通过 name 进行互斥，指定为同一个 name 的多个 radio 可以实现互斥。但其实我们在指定 v-model 的时候已经实现互斥了，因为 v-model 对应的值相同，已经实现了 name 的效果。
+
+#### 绑定 select
+
+然后是 select 的绑定，也就是下拉菜单。
+
+~~~html
+<body>
+<div id="app">
+    <select v-model="fruit">
+        <!--    文本是显示的内容，value 是拿到之后传递给后端的内容    -->
+        <option value="apple">苹果</option>
+        <option value="banana">香蕉</option>
+        <option value="peach">桃子</option>
+    </select>
+    <p>你选择了: {{ fruit }}</p>
+
+    <hr>
+    <!--  multiple 表示让 select 支持多选，Mac 的话需要按 shift 或 command 键  -->
+    <!--  size 表示显示多少个选项，多了需要通过滑动滚动条  -->
+    <select multiple size="3" v-model="fruits">
+        <option value="apple">苹果</option>
+        <option value="banana">香蕉</option>
+        <option value="peach">桃子</option>
+    </select>
+    <p>你选择了: {{ fruits }}</p>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {fruit: "", fruits: []}
+        },
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/42.png)
+
+比较简答，需要注意的 v-model 是要绑定在 select 上面，而不是 option。
+
+#### v-model 修饰符 lazy
+
+lazy 修饰符有什么用呢？默认情况下，对于 input 框来说，v-model 在进行双向绑定时，绑定的是 input 事件。
+
+~~~html
+<input :value="message" @input="changeMessage">
+<!-- 以下是语法糖 -->
+<input v-model="message"">
+~~~
+
+v-model 相当于先通过 v-bind 绑定属性，然后当内容改变时，再反过来同步给属性，等价于 v-bind 和 v-on。但很明显，v-model 它监听的是 input 事件，当输入框的内容发生改变，就会将最新的内容和属性进行同步。
+
+如果我们在 v-model 后面加上修饰符 lazy，那么会将绑定的事件切换为 change 事件，此时只有在提交时（比如回车）才会触发。
+
+~~~html
+<body>
+<div id="app">
+    <input type="text" v-model.lazy="message">
+    <h2>你输入了: {{ message }}</h2>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {message: "你好，世界"}
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/43.png)
+
+我们看到内容输入之后并没有发生改变，只有当我们回车、或者焦点离开输入框（在输入框的外部随便点击一下），内容才会改变。
+
+#### v-model 修饰符 number
+
+它负责将内容转成整数，如果转换失败，那么保留原来的内容。
+
+~~~html
+<body>
+<div id="app">
+    <input type="text" v-model.number="counter">
+    <h2>你输入了: {{ counter }}</h2>
+</div>
+
+<script src="vue.js"></script>
+<script>
+
+    let app = Vue.createApp({
+        data() {
+            return {counter: "123"}
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/44.png)
+
+但这修饰符用的不多，因为可以将 type 指定为 "number"，如果输入的不是数字，那么压根输不进去，这样更智能。
+
+#### v-model 修饰符 trim
+
+这个从名字就能看出来，trim 表示去除首尾的空格，不过用的不多。
+
+当然也可以绑定多个修饰符，直接 v-model.xxx.xxx 即可。
+
+### Vue 的组件注册
+
+在 HTML 中可能会有大量的重复逻辑，那么能不能将这些重复逻辑单独抽离出来，放在一个单独的地方呢？答案是可以的，这个地方在 Vue 中叫做组件。
+
+而组件分为两种，全局组件和局部组件，并且都是需要注册的。
+
++ 全局组件：在其它的任何组件中都可以使用的组件；
++ 局部组件：只有在注册的组件中才能使用的组件；
+
+#### 全局组件的注册
+
+全局组件需要使用创建的全局 app 来注册，通过 component 方法传入组件名称、组件对象就可以注册一个全局组件了。之后我们可以在根组件的 template 中直接使用这个全局组件。
+
+直接说可能有点不好理解，我们举个例子。
+
+~~~html
+<script>
+    // app 也是一个组件，只不过它是根组件
+    let app = Vue.createApp({})
+    // 然后我们自己创建一个组件，用于存放商品信息的
+    // 通过传入组件名称和组件对象，向 app 注册一个全局组件
+    let productItem = {}
+    app.component("product-item", productItem)
+    app.mount("#app")
+</script>
+~~~
+
+此时组件就创建好了，那么如何使用呢？因为我们注册的组件的名称是 product-item，那么便可以通过如下方式来使用：
+
+~~~html
+<product-item></product-item>
+~~~
+
+因为是全局组件，所以在任何地方都可以使用。然后是内容，这个组件里面要怎么显示内容呢？
+
+~~~html
+<body>
+<div id="app">
+    <product-item></product-item>
+    <product-item></product-item>
+    <product-item></product-item>
+</div>
+<script src="vue.js"></script>
+<script>
+    let app = Vue.createApp({})
+    let productItem = {
+        template: `<h2>我是一个 product-item 组件</h2>`
+    }
+    app.component("product-item", productItem)
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/45.png)
+
+此时我们就实现了代码的复用，当然这里只有一行，但我们可以写任意行代码。于是有人意识到了，如果通过字符串的形式，内容多了不好维护啊，是的，所以还有一种方式。
+
+~~~html
+<body>
+<div id="app">
+    <product-item></product-item>
+    <product-item></product-item>
+    <product-item></product-item>
+</div>
+<!-- 创建一个 template -->
+<template id="product">
+    <h2>我是一个 product-item 组件</h2>
+</template>
+
+<script src="vue.js"></script>
+<script>
+    let app = Vue.createApp({})
+    let productItem = {
+        template: "#product"  // 通过 id 指定
+    }
+    app.component("product-item", productItem)
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+效果是一样的，通过将内容写在一个单独 template 标签中，然后通过 id 的方式去引用即可。不过这两种方式在实际开发中都不会使用，后面会介绍 .vue 文件的写法，到时结构会更清晰。
+
+#### 组件化的思想
+
+如果我们将一个页面中所有的处理逻辑全部放在一起，处理起来就会变得非常复杂，而且不利于后续的管理和扩展。但如果将一个页面拆分成一个个的功能块，每个功能块完成属于自己的部分功能，之后整个页面的管理和维护就变得非常容易了，可以像搭积木一样来搭建项目。
+
+现在可以说整个大前端的开发都是组件化的天下，无论从三大框架，还是跨平台的 flutter，甚至是移动端都在专项组件化开发，包括小程序开发也是属于组件化的思想。
+
++ 将一个完整页面分成很多组件；
++ 每个组件用于实现页面的一个功能块；
++ 而每一个组件又可以细分；
++ 每个组件可以在多个地方调用；
+
+对于 Vue 而言也是支持组件化的，通过 createApp 创建出来的便是根组件。组件化提供了一种抽象，让我们可以开发出一个个独立的小组件来构造我们的应用，任何的应用都会被抽象成一颗组件树。
+
+#### 组件的属性
+
+通过组件我们实现了代码的复用，但目前组件的都是写死的，可不可以动态展示内容呢？
+
+~~~html
+<body>
+<div id="app">
+    <product-item></product-item>
+</div>
+
+<template id="product">
+    <h2 v-for="product in products">
+        商品：{{ product.name }}，价格：{{ product.price }}
+    </h2>
+</template>
+
+<script src="vue.js"></script>
+<script>
+    let app = Vue.createApp({})
+    let productItem = {
+        template: "#product",
+        data() {
+            return {products: [{name: "香蕉", price: 3}, {name: "苹果", price: 4}]}
+        }
+    }
+    app.component("product-item", productItem)
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+![](pic/46.png)
+
+我们看到用法和 app 一模一样，因为它们本质上都是组件，都支持 data、methods、watch、computed 等属性。
+
+#### 局部组件的注册
+
+每一个组件都会对应一个 template，通过 id 去查找，然后把组件名当做标签即可展示 template 里面的内容。如果是全局组件，那么它可以出现在任意的 template 中。
+
+~~~html
+<body>
+<div id="app">
+    <nav-side></nav-side>
+</div>
+
+<template id="nav-side">
+    <p>-------- nav start --------</p>
+    <!--  product-item 在任意地方使用，包括其它组件的 template  -->
+    <product-item></product-item>
+    <p>-------- nav end --------</p>
+</template>
+
+<template id="product">
+    <h2 v-for="product in products">
+        商品：{{ product.name }}，价格：{{ product.price }}
+    </h2>
+</template>
+
+<script src="vue.js"></script>
+<script>
+    let app = Vue.createApp({})
+    app.component("nav-side", {template: "#nav-side"})
+    let productItem = {
+        template: "#product",
+        data() {
+            return {products: [{name: "香蕉", price: 3}, {name: "苹果", price: 4}]}
+        }
+    }
+    app.component("product-item", productItem)
+    app.mount("#app")
+</script>
+</body>
+~~~
+
+我们创建了两个组件，分别是 nav-side 和 product-item，它们都是全局组件。每个组件都对应一个 template，是用来渲染模板的，通过 id 去查找。但是对于全局组件来说，在使用的时候，可以出现在其它任意组件当中。
+
+全局组件往往是在应用程序一开始就会注册完成，但如果没有用到，也会被注册。那么 webpack 在打包的时候也会对没有使用到的全局组件进行打包，这样就增加了包的大小。
+
+所以在开发中，我们通常使用局部注册。
+
++ 局部注册是在我们需要使用到的组件中，通过 components 属性选项来进行注册；
++ 比如我们之前见到了 data、computed、methods 选项，事实上还有一个 components 选项；
++ 该选项对应的是一个对象，里面键值对是 组件的名称: 组件对象；
+
+~~~html
+<body>
+<div id="app">
+    <product-item></product-item>
+</div>
+
+<template id="product">
+    <h2 v-for="product in products">
+        商品：{{ product.name }}，价格：{{ product.price }}
+    </h2>
+</template>
 
 
+<script src="vue.js"></script>
+<script>
+    let app = Vue.createApp({
+        // 要看组件是哪里用，我们是在 app 里面用
+        // 所以注册成一个 app 的局部组件即可
+        components: {
+            "product-item": {
+                template: "#product",
+                data() {
+                    return {products: [{name: "香蕉", price: 3}, {name: "苹果", price: 4}]}
+                }
+            }
+        }
+    })
+    app.mount("#app")
+</script>
+</body>
+~~~
 
+由于是局部组件，并且是 app 里面注册的，那么只能在 app 里面用。假设这时候还有一个 nav-side，那么放在 nav-side 里面就会失效。当然组件也是可以层层嵌套的， 因为都是组件，所以可以在 product-item 对象里面再定义一个 components。
 
+但是你会发现这种模式有一个缺点，就是嵌套的层数太多了，让人看着难受。所以后续我们会使用 .vue 文件，使用文件的方式组织代码，结构会非常清晰，一目了然。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### 从 html 文件到 Vue 文件的开发模式转变
 
 
 
